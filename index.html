@@ -5,7 +5,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     </head>
     <body>
-        <h1 id = 'header'></h1>
         <canvas id = 'canvas' width = '1024' height = '1024'></canvas>
         <script type = 'module'>
             
@@ -75,7 +74,6 @@
                 }
             });
             if (!device) {fail('no webgpu')}
-            const header = document.getElementById('header');
             const canvas  = document.getElementById('canvas');
             canvas.width = window.innerWidth-16;
             canvas.height = window.innerHeight-128;
@@ -339,10 +337,7 @@
                             skycolor = RED;
                         }
                         let skyline = skymask*skycolor;
-                        let oval = length(pixel.pos-vec2f(0.5,1.05));
-                        let ovalmask = smoothstep(0.12,0.124,oval);
-                        let color = ovalmask*skyline + (1-ovalmask)*RED;
-                        return color;
+                        return skyline;
                     }
                 `
             });
@@ -422,13 +417,6 @@
                 }
                 
                 timer();
-                if (spacebar) {header.style.color = 'red'}
-                else {header.style.color = 'black'}
-                header.innerText = 'LAT\xa0\xa0\xa0\xa0\xa0\xa0LON\xa0\xa0\xa0\xa0\xa0\xa0DIR\n' 
-                    + lat.toPrecision(5) + '\xa0\xa0' 
-                    + lon.toPrecision(5) + '\xa0\xa0\xa0'
-                    + viewdir.toPrecision(3) +'\n'
-                    + fps;
                 
                 //if (mouse) {
                  //   applymouse();
@@ -445,7 +433,6 @@
 
 // SECTION 9: load the terrain tiles into the map texture.
             async function loadtexture() {
-                header.innerText = 'LOADING...';
                 var tiles = await latlon2tiles();  
                 await Promise.all( 
                     tiles.map( 
@@ -635,23 +622,24 @@
             }
 
             function resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+                canvas.width = window.innerWidth-16;
+                canvas.height = window.innerHeight-16;
                 render();
             }
 
             function rotatescreen() {
                 mouse = false;
                 spacebar = false;
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+                canvas.width = window.innerWidth-16;
+                canvas.height = window.innerHeight-16;
             }
 
             function touchstart() {
-                for (let idx = 0; idx < event.targetTouches.length; idx++) {
-                    touches.push(event.targetTouches[idx]);
-                }
-                console.log(event.touches.length+' touch start');
+                //for (let idx = 0; idx < event.targetTouches.length; idx++) {
+                 //   touches.push(event.targetTouches[idx]);
+                //}
+                event.preventDefault();
+                touches = [event.targetTouches[0]];
             }
 
             function touchmove() {
@@ -667,16 +655,13 @@
                     else {
                         const newspeed = speed+dy;
                         speed = Math.max(0,Math.min(0.0001,newspeed));
-                        console.log('speed '+speed);
                     }
                     touches = [event.targetTouches[0]];
                 }
-                console.log(event.touches.length+' touch moves');
             }
 
             function touchend() {
                 touches = [];
-                console.log(event.touches.length+' touch ends');
             }
 
 // SECTION 12: run the program.
