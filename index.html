@@ -641,11 +641,14 @@
             }
 
             function touchstart() {
-                //for (let idx = 0; idx < event.targetTouches.length; idx++) {
-                 //   touches.push(event.targetTouches[idx]);
-                //}
                 event.preventDefault();
-                touches = [event.targetTouches[0]];
+                //if (event.targetTouches.length < 3) {
+                //    touches = event.targetTouches;
+                //}
+                //else {
+                //    touches = [];
+                //}
+                touches = event.targetTouches;
             }
 
             function touchmove() {
@@ -660,14 +663,31 @@
                     }
                     else {
                         const newspeed = speed+dy;
-                        speed = Math.max(0,Math.min(0.0001,newspeed));
+                        speed = Math.max(0,Math.min(0.0002,newspeed));
                     }
-                    touches = [event.targetTouches[0]];
                 }
+                else if ((touches.length == 2) && (event.targetTouches.length == 2)) {
+                        var idx0 = -1;
+                    if ((touches[0].identifier == event.targetTouches[0].identifier) && (touches[1].identifier == event.targetTouches[1].identifier)) {
+                        idx0 = 0;
+                    }
+                    else if ((touches[0].identifier == event.targetTouches[1].identifier) && (touches[1].identifier == event.targetTouches[0].identifier)) {
+                        idx0 = 1;
+                    }
+                    if (idx0 > -1) {
+                        const dx0 = -0.005*(touches[0].clientX - event.targetTouches[idx0].clientX);
+                        const dx1 = -0.005*(touches[0].clientX - event.targetTouches[1-idx0].clientX);
+                        const dx = 0.5*(dx0+dx1);
+                        const sign = Math.sign(dx);
+                        viewdir = (viewdir + sign*PI + 0.1*mousedx) % (2*PI) - sign*PI;
+                        UNIFORMBUFFER.set([viewdir], DIR);
+                    }
+                }
+                touches = event.targetTouches;
             }
 
             function touchend() {
-                touches = [];
+                touches = event.targetTouches;
             }
 
 // SECTION 12: run the program.
