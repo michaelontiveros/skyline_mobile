@@ -667,7 +667,7 @@
                     }
                 }
                 else if ((touches.length == 2) && (event.targetTouches.length == 2)) {
-                        var idx0 = -1;
+                    var idx0 = -1;
                     if ((touches[0].identifier == event.targetTouches[0].identifier) && (touches[1].identifier == event.targetTouches[1].identifier)) {
                         idx0 = 0;
                     }
@@ -676,10 +676,10 @@
                     }
                     if (idx0 > -1) {
                         const dx0 = -0.005*(touches[0].clientX - event.targetTouches[idx0].clientX);
-                        const dx1 = -0.005*(touches[0].clientX - event.targetTouches[1-idx0].clientX);
+                        const dx1 = -0.005*(touches[1].clientX - event.targetTouches[1-idx0].clientX);
                         const dx = 0.5*(dx0+dx1);
                         const sign = Math.sign(dx);
-                        viewdir = (viewdir + sign*PI + 0.1*mousedx) % (2*PI) - sign*PI;
+                        viewdir = (viewdir + sign*PI + dx) % (2*PI) - sign*PI;
                         UNIFORMBUFFER.set([viewdir], DIR);
                     }
                 }
