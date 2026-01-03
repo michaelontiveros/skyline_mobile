@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     </head>
     <body>
-        <canvas id = 'canvas' width = '1024' height = '1024'></canvas>
+        <canvas id = 'canvas' width = '500' height = '350'></canvas>
         <script type = 'module'>
             
 // SKYLINE
@@ -75,8 +75,8 @@
             });
             if (!device) {fail('no webgpu')}
             const canvas  = document.getElementById('canvas');
-            canvas.width = window.innerWidth-16;
-            canvas.height = window.innerHeight-128;
+            //canvas.width = window.innerWidth-16;
+            //canvas.height = window.innerHeight-128;
             const context = canvas.getContext('webgpu');
             context.configure({     
                 device : device,
@@ -630,8 +630,14 @@
             function rotatescreen() {
                 mouse = false;
                 spacebar = false;
-                canvas.width = window.innerWidth-64;
-                canvas.height = window.innerHeight-32;
+                if (screen.orientation.type.startsWith('portrait')) {
+                    canvas.width = 350;
+                    canvas.height = 250;
+                }
+                else {
+                    canvas.width = 500;
+                    canvas.height = 350;
+                }
             }
 
             function touchstart() {
