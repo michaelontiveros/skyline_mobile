@@ -642,12 +642,6 @@
 
             function touchstart() {
                 event.preventDefault();
-                //if (event.targetTouches.length < 3) {
-                //    touches = event.targetTouches;
-                //}
-                //else {
-                //    touches = [];
-                //}
                 touches = event.targetTouches;
             }
 
@@ -657,14 +651,15 @@
                     const dy = 0.000005*(touches[0].clientY - event.targetTouches[0].clientY);
                     if (Math.abs(dx) > Math.abs(dy)) {
                         const sign = Math.sign(dx);
-                        pathdir = (pathdir + sign*PI + dx) % (2*PI) - sign*PI;
-                        viewdir = pathdir;
-                        UNIFORMBUFFER.set([pathdir], DIR);
+                        viewdir = (viewdir + sign*PI + dx) % (2*PI) - sign*PI;
+                        UNIFORMBUFFER.set([viewdir], DIR);
+                        pathdir = viewdir;
                     }
                     else {
                         const newspeed = speed+dy;
                         speed = Math.max(0,Math.min(0.0002,newspeed));
                     }
+                    touches = event.targetTouches;
                 }
                 else if ((touches.length == 2) && (event.targetTouches.length == 2)) {
                     var idx0 = -1;
@@ -682,12 +677,12 @@
                         viewdir = (viewdir + sign*PI + dx) % (2*PI) - sign*PI;
                         UNIFORMBUFFER.set([viewdir], DIR);
                     }
+                    touches = event.targetTouches;
                 }
-                touches = event.targetTouches;
             }
 
             function touchend() {
-                touches = event.targetTouches;
+                touches = [];
             }
 
 // SECTION 12: run the program.
