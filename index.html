@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     </head>
     <body>
+        <h1 id = 'header'></h1>
         <canvas id = 'canvas' width = '500' height = '350'></canvas>
         <script type = 'module'>
             
@@ -46,8 +47,8 @@
             var rendering = false;
             var touches = [];
 
-            const LINELENGTH = 2048; // The skyline is LINELENGTH pixels.
-            const MAPWIDTH = 2048*2; // The heightmap is MAPWIDTH**2 pixels.
+            const LINELENGTH = 512; // The skyline is LINELENGTH pixels.
+            const MAPWIDTH = 2048; // The heightmap is MAPWIDTH**2 pixels.
             const TILEWIDTH = 256; // Each tile is 256**2 pixels.
             const MAPTILES = MAPWIDTH/TILEWIDTH;
             const PI = 3.1415926;
@@ -74,9 +75,8 @@
                 }
             });
             if (!device) {fail('no webgpu')}
+            const header = document.getElementById('header');
             const canvas  = document.getElementById('canvas');
-            //canvas.width = window.innerWidth-16;
-            //canvas.height = window.innerHeight-128;
             const context = canvas.getContext('webgpu');
             context.configure({     
                 device : device,
@@ -417,7 +417,7 @@
                 }
                 
                 timer();
-                
+                header.innerText = fps.toPrecision(3);
                 //if (mouse) {
                  //   applymouse();
                     if(!stuck()) {movepos()}
@@ -433,6 +433,7 @@
 
 // SECTION 9: load the terrain tiles into the map texture.
             async function loadtexture() {
+                header.innerText = 'LOADING...';
                 var tiles = await latlon2tiles();  
                 await Promise.all( 
                     tiles.map( 
