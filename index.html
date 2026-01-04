@@ -48,7 +48,7 @@
             var touches = [];
 
             const LINELENGTH = 512; // The skyline is LINELENGTH pixels.
-            const MAPWIDTH = 2048; // The heightmap is MAPWIDTH**2 pixels.
+            const MAPWIDTH = 2048*2; // The heightmap is MAPWIDTH**2 pixels.
             const TILEWIDTH = 256; // Each tile is 256**2 pixels.
             const MAPTILES = MAPWIDTH/TILEWIDTH;
             const PI = 3.1415926;
@@ -658,7 +658,7 @@
                     }
                     else {
                         const newspeed = speed+dy;
-                        speed = Math.max(0,Math.min(0.0002,newspeed));
+                        speed = Math.max(0,Math.min(0.0005,newspeed));
                     }
                     touches = event.targetTouches;
                 }
