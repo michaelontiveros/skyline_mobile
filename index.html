@@ -48,20 +48,17 @@
             var viewdir = -2.5; // -PI < viewdir < PI.
             var pathdir = viewdir; // -PI < pathdir < PI.
             var speed = 0.0001; // 0 < speed.
-            var x, y; // Slippy map floating point coordinates.
+            var x,y; // Slippy map floating point coordinates.
             var xint,yint;
             var pos; // 0 < pos[0],pos[1] < 1.
             var angle;
+            var eyeline;
+            var prevpos;
 
             var bytes = 0; // Count bytes.
             var frame = 0; // Count frames.
             var fps = 0;
             var t0 = Date.now();
-            var spacebar = false;
-            var mouse = true;
-            var mousedx = 0;
-            var mousedy = 0;
-            var rendering = false;
             var touches = [];
 
             const LINELENGTH = 768; // The skyline is LINELENGTH pixels.
@@ -80,6 +77,7 @@
             const DIR = 2;
             const SCALE = 3;
             const ANGLE = 4;
+            //const PREVPOS = 5;
             const WORKERS = 8;
             const STRIDE = 128;
 
@@ -209,7 +207,8 @@
                         pos : vec2f,
                         dir : f32,
                         scale : f32,
-                        angle : f32
+                        angle : f32,
+                        //prevpos : vec3f
                     };
 
                     const PI = ${PI}f;
@@ -261,7 +260,8 @@
                         pos : vec2f,
                         dir : f32,
                         scale : f32,
-                        angle : f32
+                        angle : f32,
+                        //prevpos : vec3f
                     };
 
                     const STRIDE = ${STRIDE}u;
@@ -322,7 +322,8 @@
                         pos : vec2f,
                         dir : f32,
                         scale : f32,
-                        angle : f32
+                        angle : f32,
+                        //prevpos : vec3f
                     };
 
                     const PREC = 1.0 / 65536;
@@ -399,7 +400,6 @@
 
 // SECTION 8: run the shaders.
             function render() {
-                rendering = true;
                 for (let i = 0; i < REPEATS; i++) {
                     device.queue.writeBuffer(uniformbuffer, 0, UNIFORMBUFFER);
                 
@@ -435,7 +435,7 @@
                     device.queue.submit([commandbuffer]);
                 }
                 
-                timer();
+                //timer();
                 if(!stuck()) {movepos()}
                 else {
                     pathdir = (pathdir + 2*PI) % (2*PI) - PI;
@@ -546,7 +546,7 @@
                 if (frame % FRAMES == 0) {
                     const t1 = Date.now();
                     const time = t1 - t0;
-                    fps = FRAMES * REPEATS * 1000 / time;
+                    fps = FRAMES * REPEATS*1000/time;
                     t0 = t1;
                 }
             }
@@ -563,21 +563,17 @@
                 const height = screen.height * devicePixelRatio;
                 const dimbig = Math.max(width,height);
                 const dimsmall = Math.min(width,height);
-                //canvas.width = Math.max(1, Math.min(width, device.limits.maxTextureDimension2D));
-                //canvas.height = Math.max(1, Math.min(height, device.limits.maxTextureDimension2D));
                 if (screen.orientation.type.startsWith('portrait')) {
                     canvas.width = dimsmall;
                     canvas.height = dimbig;
-                    angle = PI/6*dimsmall/dimbig;
+                    angle = PI/4*dimsmall/dimbig;
                 }
                 else {
                     canvas.width = dimbig;
                     canvas.height = dimsmall;
-                    angle = PI/6*dimbig/dimsmall;
+                    angle = PI/4*dimbig/dimsmall;
                 }
                 UNIFORMBUFFER.set([angle], ANGLE);
-                //console.log('width '+width);
-                //console.log('height '+height);
                 console.log('angle '+angle);
             }
 
@@ -588,7 +584,7 @@
 
             function touchmove() {
                 if ((touches.length == 1) && (event.targetTouches[0].identifier == touches[0].identifier)) {
-                    const dx = -0.005*(touches[0].clientX - event.targetTouches[0].clientX);
+                    const dx = -0.003*(touches[0].clientX - event.targetTouches[0].clientX);
                     const dy = 0.000005*(touches[0].clientY - event.targetTouches[0].clientY);
                     if (Math.abs(dx) > Math.abs(dy)) {
                         const sign = Math.sign(dx);
@@ -611,8 +607,8 @@
                         idx0 = 1;
                     }
                     if (idx0 > -1) {
-                        const dx0 = -0.005*(touches[0].clientX - event.targetTouches[idx0].clientX);
-                        const dx1 = -0.005*(touches[1].clientX - event.targetTouches[1-idx0].clientX);
+                        const dx0 = -0.003*(touches[0].clientX - event.targetTouches[idx0].clientX);
+                        const dx1 = -0.003*(touches[1].clientX - event.targetTouches[1-idx0].clientX);
                         if (Math.sign(dx0) == Math.sign(dx1)) {
                             const dx = 0.5*(dx0+dx1);
                             const sign = Math.sign(dx);
