@@ -561,12 +561,23 @@
             function resize() {
                 const width = screen.width * devicePixelRatio;
                 const height = screen.height * devicePixelRatio;
-                canvas.width = Math.max(1, Math.min(width, device.limits.maxTextureDimension2D));
-                canvas.height = Math.max(1, Math.min(height, device.limits.maxTextureDimension2D)); 
-                angle = PI/6*width/height;
+                const dimbig = Math.max(width,height);
+                const dimsmall = Math.min(width,height);
+                //canvas.width = Math.max(1, Math.min(width, device.limits.maxTextureDimension2D));
+                //canvas.height = Math.max(1, Math.min(height, device.limits.maxTextureDimension2D));
+                if (screen.orientation.type.startsWith('portrait')) {
+                    canvas.width = dimsmall;
+                    canvas.height = dimbig;
+                    angle = PI/6*dimsmall/dimbig;
+                }
+                else {
+                    canvas.width = dimbig;
+                    canvas.height = dimsmall;
+                    angle = PI/6*dimbig/dimsmall;
+                }
                 UNIFORMBUFFER.set([angle], ANGLE);
-                console.log('width '+width);
-                console.log('height '+height);
+                //console.log('width '+width);
+                //console.log('height '+height);
                 console.log('angle '+angle);
             }
 
