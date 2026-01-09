@@ -45,8 +45,8 @@
             //var lon = -110.732;
             
             var zoom = 14; // 0 < zoom < 16.
-            var viewdir = -2.5; // -PI < viewdir < PI.
-            var pathdir = viewdir; // -PI < pathdir < PI.
+            var viewdir = -2.6; // -PI < viewdir < PI.
+            var pathdir = -1.9; // -PI < pathdir < PI.
             var speed = 0.0001; // 0 < speed.
             var x,y; // Slippy map floating point coordinates.
             var xint,yint;
@@ -68,6 +68,8 @@
             const PI = 3.1415926;
             const NEAR = 0.01; // 0 < NEAR.
             const FAR = 0.9; // NEAR < FAR < 1.
+            const MAXSPEED = 0.0002;
+            const VIEWANGLE = PI/5;
             const FRAMES = 10; // Check the time after this many frames. 
             const REPEATS = 1; // Compute each frame this many times.
 
@@ -89,7 +91,10 @@
                     //maxStorageBufferBindingSize : 4294967292
                 }
             });
-            if (!device) {fail('no webgpu')}
+            if (!device) {
+                console.log('ERROR.');
+                alert('Enable WebGPU in your browser settings.')
+            }
             //const header = document.getElementById('header');
             const canvas  = document.getElementById('canvas');
             const context = canvas.getContext('webgpu');
@@ -461,7 +466,7 @@
                 );
                 latlon2pos();
                 lat2scale();
-                UNIFORMBUFFER.set([pathdir], DIR);
+                UNIFORMBUFFER.set([viewdir], DIR);
                 console.log(Math.ceil(bytes/1000000) + 'MB');
             }
             
@@ -566,12 +571,12 @@
                 if (screen.orientation.type.startsWith('portrait')) {
                     canvas.width = dimsmall;
                     canvas.height = dimbig;
-                    angle = PI/4*dimsmall/dimbig;
+                    angle = VIEWANGLE*dimsmall/dimbig;
                 }
                 else {
                     canvas.width = dimbig;
                     canvas.height = dimsmall;
-                    angle = PI/4*dimbig/dimsmall;
+                    angle = VIEWANGLE*dimbig/dimsmall;
                 }
                 UNIFORMBUFFER.set([angle], ANGLE);
                 console.log('angle '+angle);
@@ -594,7 +599,7 @@
                     }
                     else {
                         const newspeed = speed+dy;
-                        speed = Math.max(0,Math.min(0.0005,newspeed));
+                        speed = Math.max(0,Math.min(MAXSPEED,newspeed));
                     }
                     touches = event.targetTouches;
                 }
