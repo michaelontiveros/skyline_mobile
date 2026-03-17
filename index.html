@@ -44,7 +44,7 @@
             //var lat = 43.856;
             //var lon = -110.732;
             
-            var zoom = 14; // 0 < zoom < 16.
+            var zoom = 11; // 0 < zoom < 16.
             var viewdir = -2.7; // -PI < viewdir < PI.
             var pathdir = -2.7; // -PI < pathdir < PI.
             var speed = 0.0001; // 0 < speed.
@@ -450,7 +450,20 @@
                 window.requestAnimationFrame(render);
             }
 
-// SECTION 9: load the terrain tiles into the map texture.
+// SECTION 9: load the terrain tiles into the map texture.  
+
+            const getCoords = () => new Promise((success, error) => 
+                navigator.geolocation.getCurrentPosition(success, error)
+            );
+            
+            function success(position) {
+                return position;
+            }
+
+            function error(error) {
+                console.log("NO USER COORDINATES.");
+            }
+
             async function loadtexture() {
                 var tiles = await latlon2tiles();  
                 await Promise.all( 
@@ -637,7 +650,16 @@
             }
 
 // SECTION 12: run the program.
-            resize();
+            resize();  
+            try {
+                const position = await getCoords();
+                lat = position.coords.latitude;
+                lon = position.coords.longitude;
+            }
+            catch (error) {
+
+            }
+            console.log(lat,lon);
             await loadtexture();
             canvas.addEventListener('touchstart', touchstart);
             canvas.addEventListener('touchmove', touchmove);
