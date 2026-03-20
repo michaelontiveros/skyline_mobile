@@ -22,6 +22,7 @@
          }
     </style>
     <body>
+        <h1 id = 'header'></h1>
         <canvas id = 'canvas' width = '512' height = '512'></canvas>
         <script type = 'module'>
             
@@ -47,7 +48,7 @@
             var zoom = 11; // 0 < zoom < 16.
             var viewdir = -2.7; // -PI < viewdir < PI.
             var pathdir = -2.7; // -PI < pathdir < PI.
-            var speed = 0.0001; // 0 < speed.
+            var speed = 0.0000; // 0 <= speed.
             var x,y; // Slippy map floating point coordinates.
             var xint,yint;
             var pos; // 0 < pos[0],pos[1] < 1.
@@ -95,7 +96,7 @@
                 console.log('ERROR.');
                 alert('Enable WebGPU in your browser settings.')
             }
-            //const header = document.getElementById('header');
+            const header = document.getElementById('header');
             const canvas  = document.getElementById('canvas');
             const context = canvas.getContext('webgpu');
             context.configure({     
@@ -352,16 +353,23 @@
                     }
                         
                     @fragment 
-                    fn fs(pixel : Pixel) -> @location(0) vec4f {    
-                        let x = u32(pixel.pos.x * LENGTH);
-                        let y = 1 - pixel.pos.y;
-                        let ymax = f32(line[x].z)*PREC;
-                        let skymask = smoothstep(ymax-0.001, ymax+0.001, y);
+                    fn fs(pixel : Pixel) -> @location(0) vec4f {  
+                        let x = pixel.pos.x;
+                        let y = pixel.pos.y;
+                        let idx = u32(x * LENGTH);
+                        let ymax = f32(line[idx].z)*PREC;
+                        let skymask = smoothstep(ymax-0.001, ymax+0.001, 1.0-y);
+                        let c = cos(my.dir);
+                        let s = -sin(my.dir);
+                        let xr = (x-0.1)*s-(y-0.1)*c;
+                        let yr = (x-0.1)*c+(y-0.1)*s;
+                        let rectangle = abs(xr)+0.1*(yr)+0.01 < 0.01 && abs(yr) < 0.05;
+                        let compass = select(1.0,0.0,rectangle);
                         var skycolor = WHITE;
                         if(length(my.pos-vec2f(0.5))>0.31) {
                             skycolor = RED;
                         }
-                        let skyline = skymask*skycolor;
+                        let skyline = skymask*skycolor*compass;
                         return skyline;
                     }
                 `
@@ -440,7 +448,14 @@
                     device.queue.submit([commandbuffer]);
                 }
                 
-                //timer();
+                //timer();  
+                header.style.color = 'black'
+                header.innerText = 'LAT\xa0\xa0\xa0\xa0\xa0\xa0LON\xa0\xa0\xa0\xa0\xa0\xa0DIR\n' 
+                    + lat.toPrecision(5) + '\xa0\xa0' 
+                    + lon.toPrecision(5) + '\xa0\xa0\xa0'
+                    + viewdir.toPrecision(3) +'\n'
+                    + fps;
+
                 if(!stuck()) {movepos()}
                 else {
                     pathdir = (pathdir + 2*PI) % (2*PI) - PI;
