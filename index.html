@@ -45,7 +45,7 @@
             //var lat = 43.856;
             //var lon = -110.732;
             
-            var zoom = 11; // 0 < zoom < 16.
+            var zoom = 13; // 0 < zoom < 16.
             var viewdir = -2.7; // -PI < viewdir < PI.
             var pathdir = -2.7; // -PI < pathdir < PI.
             var speed = 0.0000; // 0 <= speed.
@@ -335,6 +335,8 @@
                     const PREC = 1.0 / 65536;
                     const LENGTH = ${LINELENGTH}f;
                     const WHITE = vec4f(1);
+                    const BLACK = vec4f(0,0,0,1);
+                    const BLUE = vec4f(0.2,0.2,1,1);
                     const RED = vec4f(1,0,0,1);
 
                     @group(0) @binding(0) var<uniform>                my : Observer;
@@ -366,10 +368,13 @@
                         let rectangle = abs(xr)+0.1*(yr)+0.01 < 0.01 && abs(yr) < 0.05;
                         let compass = select(1.0,0.0,rectangle);
                         var skycolor = WHITE;
+                        let dist = length(PREC*vec2f(line[idx].xy)-my.pos);
+                        var linecolor = mix(BLACK,BLUE,1.0-exp(-100.0*dist));
+                        let linemask = smoothstep(ymax-0.01, ymax-0.002, 1-y)*smoothstep(ymax+0.001,ymax,1-y);
                         if(length(my.pos-vec2f(0.5))>0.31) {
                             skycolor = RED;
                         }
-                        let skyline = skymask*skycolor*compass;
+                        let skyline = (skymask*skycolor + linecolor*linemask + vec4f(0,0,0,1))*compass;
                         return skyline;
                     }
                 `
