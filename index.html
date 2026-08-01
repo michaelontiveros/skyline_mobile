@@ -336,8 +336,8 @@
                     const LENGTH = ${LINELENGTH}f;
                     const WHITE = vec4f(1);
                     const BLACK = vec4f(0,0,0,1);
-                    const BLUE = vec4f(0.2,0.2,1,1);
-                    const RED = vec4f(1,0,0,1);
+                    const BLUE = vec4f(0,0.8,1,1);
+                    const RED = vec4f(0.7,0,0.2,1);
 
                     @group(0) @binding(0) var<uniform>                my : Observer;
                     @group(0) @binding(1) var                        map : texture_2d<f32>;
@@ -621,6 +621,37 @@
             }
 
             function touchmove() {
+                // Swipe one finger to look around. Velocity remains constant. 
+                if ((touches.length == 1) && (event.targetTouches[0].identifier == touches[0].identifier)) {
+                    const dx = -0.003*(touches[0].clientX - event.targetTouches[0].clientX);
+                    const sign = Math.sign(dx);
+                    viewdir = (viewdir + sign*PI + dx) % (2*PI) - sign*PI;
+                    UNIFORMBUFFER.set([viewdir], DIR);
+                    touches = event.targetTouches;
+                }
+                
+                // Pinch to accelerate.
+                else if ((touches.length == 2) && (event.targetTouches.length == 2)) {
+                    var pinch = False;
+                    if ((touches[0].identifier == event.targetTouches[0].identifier) && (touches[1].identifier == event.targetTouches[1].identifier)) {
+                        pinch = True;
+                    }
+                    else if ((touches[0].identifier == event.targetTouches[1].identifier) && (touches[1].identifier == event.targetTouches[0].identifier)) {
+                        pinch = True;
+                    }
+                    if (pinch) {
+                        const d0 = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+                        const d1 = Math.hypot(event.targetTouches[0].clientX - event.targetTouches[1].clientX, event.targetTouches[0].clientY - event.targetTouches[1].clientY);
+                        const acc = 0.000005*(d1-d0);
+                        const newspeed = speed+acc;
+                        speed = Math.max(0,Math.min(0.0005,newspeed));
+                        pathdir = viewdir;
+                        }
+                }
+                touches = event.targetTouches;
+            }
+
+                /*
                 if ((touches.length == 1) && (event.targetTouches[0].identifier == touches[0].identifier)) {
                     const dx = -0.003*(touches[0].clientX - event.targetTouches[0].clientX);
                     const dy = 0.000005*(touches[0].clientY - event.targetTouches[0].clientY);
@@ -636,6 +667,7 @@
                     }
                     touches = event.targetTouches;
                 }
+                // Two fingers.
                 else if ((touches.length == 2) && (event.targetTouches.length == 2)) {
                     var idx0 = -1;
                     if ((touches[0].identifier == event.targetTouches[0].identifier) && (touches[1].identifier == event.targetTouches[1].identifier)) {
@@ -663,8 +695,7 @@
                     }
                     touches = event.targetTouches;
                 }
-            }
-
+                */
             function touchend() {
                 touches = [];
             }
