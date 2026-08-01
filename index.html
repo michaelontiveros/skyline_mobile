@@ -632,17 +632,19 @@
                 
                 // Pinch to accelerate.
                 else if ((touches.length == 2) && (event.targetTouches.length == 2)) {
-                    var pinch = False;
+                    var pinch = false;
                     if ((touches[0].identifier == event.targetTouches[0].identifier) && (touches[1].identifier == event.targetTouches[1].identifier)) {
-                        pinch = True;
+                        pinch = true;
                     }
                     else if ((touches[0].identifier == event.targetTouches[1].identifier) && (touches[1].identifier == event.targetTouches[0].identifier)) {
-                        pinch = True;
+                        pinch = true;
                     }
-                    if (pinch) {
+                    if (true) {
+                        console.log('pinch');
                         const d0 = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
                         const d1 = Math.hypot(event.targetTouches[0].clientX - event.targetTouches[1].clientX, event.targetTouches[0].clientY - event.targetTouches[1].clientY);
                         const acc = 0.000005*(d1-d0);
+                        console.log(acc);
                         const newspeed = speed+acc;
                         speed = Math.max(0,Math.min(0.0005,newspeed));
                         pathdir = viewdir;
