@@ -367,12 +367,12 @@
                         let yr = (x-0.1)*c+(y-0.1)*s;
                         let rectangle = abs(xr)+0.1*(yr)+0.01 < 0.01 && abs(yr) < 0.05;
                         let compass = select(1.0,0.0,rectangle);
-                        var skycolor = WHITE;
+                        var skycolor = RED;
                         let dist = length(PREC*vec2f(line[idx].xy)-my.pos);
-                        var linecolor = mix(BLACK,BLUE,1.0-exp(-100.0*dist));
+                        var linecolor = mix(BLACK,BLUE,1.0-exp(-10.0*dist));
                         let linemask = smoothstep(ymax-0.01, ymax-0.002, 1-y)*smoothstep(ymax+0.001,ymax,1-y);
                         if(length(my.pos-vec2f(0.5))>0.31) {
-                            skycolor = RED;
+                            skycolor = BLUE;
                         }
                         let skyline = (skymask*skycolor + linecolor*linemask + vec4f(0,0,0,1))*compass;
                         return skyline;
