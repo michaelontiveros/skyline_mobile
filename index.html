@@ -22,7 +22,6 @@
          }
     </style>
     <body>
-        <h1 id = 'header'></h1>
         <canvas id = 'canvas' width = '512' height = '512'></canvas>
         <script type = 'module'>
             
@@ -54,13 +53,14 @@
             var pos; // 0 < pos[0],pos[1] < 1.
             var angle;
             var eyeline;
-            var prevpos;
+            var ar;
 
             var bytes = 0; // Count bytes.
             var frame = 0; // Count frames.
             var fps = 0;
             var t0 = Date.now();
             var touches = [];
+            var loading = true;
 
             const LINELENGTH = 768; // The skyline is LINELENGTH pixels.
             const MAPWIDTH = 2048*2; // The heightmap is MAPWIDTH**2 pixels.
@@ -80,7 +80,7 @@
             const DIR = 2;
             const SCALE = 3;
             const ANGLE = 4;
-            //const PREVPOS = 5;
+            const AR = 5;
             const WORKERS = 8;
             const STRIDE = 128;
 
@@ -88,7 +88,7 @@
             const adapter = await navigator.gpu?.requestAdapter();
             const device = await adapter?.requestDevice({ 
                 requiredLimits : {
-                    //maxBufferSize : 4294967296, 
+                    //maxBufferSize : 4294967292, 
                     //maxStorageBufferBindingSize : 4294967292
                 }
             });
@@ -96,7 +96,6 @@
                 console.log('ERROR.');
                 alert('Enable WebGPU in your browser settings.')
             }
-            const header = document.getElementById('header');
             const canvas  = document.getElementById('canvas');
             const context = canvas.getContext('webgpu');
             context.configure({     
@@ -214,7 +213,7 @@
                         dir : f32,
                         scale : f32,
                         angle : f32,
-                        //prevpos : vec3f
+                        ar : f32
                     };
 
                     const PI = ${PI}f;
@@ -267,7 +266,7 @@
                         dir : f32,
                         scale : f32,
                         angle : f32,
-                        //prevpos : vec3f
+                        ar : f32
                     };
 
                     const STRIDE = ${STRIDE}u;
@@ -329,7 +328,7 @@
                         dir : f32,
                         scale : f32,
                         angle : f32,
-                        //prevpos : vec3f
+                        ar : f32
                     };
 
                     const PREC = 1.0 / 65536;
@@ -363,14 +362,14 @@
                         let skymask = smoothstep(ymax-0.001, ymax+0.001, 1.0-y);
                         let c = cos(my.dir);
                         let s = -sin(my.dir);
-                        let xr = (x-0.1)*s-(y-0.1)*c;
-                        let yr = (x-0.1)*c+(y-0.1)*s;
-                        let rectangle = abs(xr)+0.1*(yr)+0.01 < 0.01 && abs(yr) < 0.05;
+                        let xr = (x-0.1)*s-(y*my.ar-0.1)*c;
+                        let yr = (x-0.1)*c+(y*my.ar-0.1)*s;
+                        let rectangle = abs(xr)+0.1*(yr)+0.005 < 0.01 && abs(yr) < 0.05;
                         let compass = select(1.0,0.0,rectangle);
                         var skycolor = RED;
                         let dist = length(PREC*vec2f(line[idx].xy)-my.pos);
                         var linecolor = mix(BLACK,BLUE,1.0-exp(-10.0*dist));
-                        let linemask = smoothstep(ymax-0.01, ymax-0.002, 1-y)*smoothstep(ymax+0.001,ymax,1-y);
+                        let linemask = smoothstep(ymax-0.01, ymax-0.002, 1-y)*smoothstep(ymax+0.001,ymax+0.0005,1-y);
                         if(length(my.pos-vec2f(0.5))>0.31) {
                             skycolor = BLUE;
                         }
@@ -418,6 +417,16 @@
 
 // SECTION 8: run the shaders.
             function render() {
+                if (loading) {
+                    console.log('loading');
+                    window.requestAnimationFrame(render);
+                }
+                else {
+                    renderskyline();
+                }
+            }
+
+            function renderskyline() {
                 for (let i = 0; i < REPEATS; i++) {
                     device.queue.writeBuffer(uniformbuffer, 0, UNIFORMBUFFER);
                 
@@ -453,21 +462,16 @@
                     device.queue.submit([commandbuffer]);
                 }
                 
-                //timer();  
-                header.style.color = 'black'
-                header.innerText = 'LAT\xa0\xa0\xa0\xa0\xa0\xa0LON\xa0\xa0\xa0\xa0\xa0\xa0DIR\n' 
-                    + lat.toPrecision(5) + '\xa0\xa0' 
-                    + lon.toPrecision(5) + '\xa0\xa0\xa0'
-                    + viewdir.toPrecision(3) +'\n'
-                    + fps;
-
-                if(!stuck()) {movepos()}
+                if(!stuck()) {
+                    movepos();
+                }
                 else {
                     pathdir = (pathdir + 2*PI) % (2*PI) - PI;
                     viewdir = pathdir;
                     UNIFORMBUFFER.set([pathdir], DIR);
                 }
-                window.requestAnimationFrame(render);
+                
+                window.requestAnimationFrame(render_skyline);
             }
 
 // SECTION 9: load the terrain tiles into the map texture.  
@@ -501,6 +505,7 @@
                 lat2scale();
                 UNIFORMBUFFER.set([viewdir], DIR);
                 console.log(Math.ceil(bytes/1000000) + 'MB');
+                loading = false;
             }
             
             async function latlon2tiles() {
@@ -612,6 +617,7 @@
                     angle = VIEWANGLE*dimbig/dimsmall;
                 }
                 UNIFORMBUFFER.set([angle], ANGLE);
+                UNIFORMBUFFER.set([canvas.height/canvas.width], AR);
                 console.log('angle '+angle);
             }
 
@@ -621,7 +627,7 @@
             }
 
             function touchmove() {
-                // Swipe one finger to look around. Velocity remains constant. 
+                // Swipe a finger to look around. 
                 if ((touches.length == 1) && (event.targetTouches[0].identifier == touches[0].identifier)) {
                     const dx = -0.003*(touches[0].clientX - event.targetTouches[0].clientX);
                     const sign = Math.sign(dx);
@@ -639,65 +645,19 @@
                     else if ((touches[0].identifier == event.targetTouches[1].identifier) && (touches[1].identifier == event.targetTouches[0].identifier)) {
                         pinch = true;
                     }
-                    if (true) {
+                    if (pinch) {
                         console.log('pinch');
                         const d0 = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
                         const d1 = Math.hypot(event.targetTouches[0].clientX - event.targetTouches[1].clientX, event.targetTouches[0].clientY - event.targetTouches[1].clientY);
                         const acc = 0.000005*(d1-d0);
-                        console.log(acc);
                         const newspeed = speed+acc;
-                        speed = Math.max(0,Math.min(0.0005,newspeed));
+                        speed = Math.max(-0.0005,Math.min(0.0005,newspeed));
                         pathdir = viewdir;
                         }
                 }
                 touches = event.targetTouches;
             }
-
-                /*
-                if ((touches.length == 1) && (event.targetTouches[0].identifier == touches[0].identifier)) {
-                    const dx = -0.003*(touches[0].clientX - event.targetTouches[0].clientX);
-                    const dy = 0.000005*(touches[0].clientY - event.targetTouches[0].clientY);
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        const sign = Math.sign(dx);
-                        viewdir = (viewdir + sign*PI + dx) % (2*PI) - sign*PI;
-                        UNIFORMBUFFER.set([viewdir], DIR);
-                        pathdir = viewdir;
-                    }
-                    else {
-                        const newspeed = speed+dy;
-                        speed = Math.max(0,Math.min(MAXSPEED,newspeed));
-                    }
-                    touches = event.targetTouches;
-                }
-                // Two fingers.
-                else if ((touches.length == 2) && (event.targetTouches.length == 2)) {
-                    var idx0 = -1;
-                    if ((touches[0].identifier == event.targetTouches[0].identifier) && (touches[1].identifier == event.targetTouches[1].identifier)) {
-                        idx0 = 0;
-                    }
-                    else if ((touches[0].identifier == event.targetTouches[1].identifier) && (touches[1].identifier == event.targetTouches[0].identifier)) {
-                        idx0 = 1;
-                    }
-                    if (idx0 > -1) {
-                        const dx0 = -0.003*(touches[0].clientX - event.targetTouches[idx0].clientX);
-                        const dx1 = -0.003*(touches[1].clientX - event.targetTouches[1-idx0].clientX);
-                        if (Math.sign(dx0) == Math.sign(dx1)) {
-                            const dx = 0.5*(dx0+dx1);
-                            const sign = Math.sign(dx);
-                            viewdir = (viewdir + sign*PI + dx) % (2*PI) - sign*PI;
-                            UNIFORMBUFFER.set([viewdir], DIR);
-                        }
-                        else {
-                            const len0 = Math.abs(touches[0].clientX - touches[1].clientX);
-                            const len1 = Math.abs(event.targetTouches[0].clientX - event.targetTouches[1].clientX);
-                            const acc = 0.000005*(len1-len0);
-                            const newspeed = speed+acc;
-                            speed = Math.max(0,Math.min(0.0005,newspeed));
-                        }
-                    }
-                    touches = event.targetTouches;
-                }
-                */
+            
             function touchend() {
                 touches = [];
             }
@@ -713,7 +673,7 @@
 
             }
             console.log(lat,lon);
-            await loadtexture();
+            loadtexture();
             canvas.addEventListener('touchstart', touchstart);
             canvas.addEventListener('touchmove', touchmove);
             canvas.addEventListener('touchend', touchend);
